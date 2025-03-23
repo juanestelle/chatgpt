@@ -1,12 +1,12 @@
 from flask import Flask, request, jsonify
 import requests
-import openai
+from openai import OpenAI
 
 app = Flask(__name__)
 
 WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
-openai.api_key = "la_teva_clau_openai"
+client = OpenAI(api_key="la_teva_clau_openai")  # Assegura't que aquí hi tens la teva clau OpenAI correcta!
 
 @app.route('/', methods=['GET'])
 def home():
@@ -21,15 +21,15 @@ def webhook():
     except KeyError:
         return jsonify(success=True)
 
-    response = openai.ChatCompletion.create(
+    response = client.chat.completions.create(
         model="gpt-3.5-turbo",
         messages=[
-            {"role": "system", "content": "Ets un assistent amable i útil."},
+            {"role": "system", "content": "Ets un expert amable en parquets i terres laminats, i parles amb català del sud. Sempre ofereixes consells molt pràctics i detallats."},
             {"role": "user", "content": message}
         ]
     )
 
-    resposta_chatgpt = response['choices'][0]['message']['content']
+    resposta_chatgpt = response.choices[0].message.content
 
     whatsapp_url = f"https://graph.facebook.com/v19.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
