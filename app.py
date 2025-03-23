@@ -50,7 +50,7 @@ def webhook():
 
 @app.route('/webhook', methods=['GET'])
 def verify_webhook():
-    verify_token = "el_teu_token_de_verificacio"
+    verify_token = "parquet2025"
     if request.args.get("hub.verify_token") == verify_token:
         return request.args.get("hub.challenge")
     return "Error de verificació", 403
