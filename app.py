@@ -4,8 +4,8 @@ import openai
 
 app = Flask(__name__)
 
-WHATSAPP_TOKEN = "el_teu_token_meta"
-WHATSAPP_PHONE_NUMBER_ID = "el_teu_phone_number_ID"
+WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
+WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
 openai.api_key = "la_teva_clau_openai"
 
 @app.route('/', methods=['GET'])
