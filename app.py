@@ -1,3 +1,18 @@
+from flask import Flask, request, jsonify
+import os
+import requests
+from openai import OpenAI
+
+app = Flask(__name__)
+
+WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
+WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+
+@app.route('/', methods=['GET'])
+def home():
+    return "Webhook funcionant correctament!"
+
 @app.route('/prova_openai')
 def prova_openai():
     try:
@@ -11,21 +26,6 @@ def prova_openai():
         return response.choices[0].message.content
     except Exception as e:
         return f"❌ Error: {e}"
-
-
-from flask import Flask, request, jsonify
-import requests
-from openai import OpenAI
-
-app = Flask(__name__)
-
-WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
-WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-@app.route('/', methods=['GET'])
-def home():
-    return "Webhook funcionant correctament!"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
