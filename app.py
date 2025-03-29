@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
-client = OpenAI(api_key="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")  # Assegura't que aquí hi tens la teva clau OpenAI correcta!
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 @app.route('/', methods=['GET'])
 def home():
