@@ -1,3 +1,18 @@
+@app.route('/prova_openai')
+def prova_openai():
+    try:
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": "Ets un assistent de prova."},
+                {"role": "user", "content": "Hola, això és una prova."}
+            ]
+        )
+        return response.choices[0].message.content
+    except Exception as e:
+        return f"❌ Error: {e}"
+
+
 from flask import Flask, request, jsonify
 import requests
 from openai import OpenAI
@@ -6,7 +21,7 @@ app = Flask(__name__)
 
 WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
-client = OpenAI(api_key="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")  # Assegura't que aquí hi tens la teva clau OpenAI correcta!
+client = OpenAI(api_key="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")  # Assegura't que aquí hi tens la teva clau OpenAI correcta!
 
 @app.route('/', methods=['GET'])
 def home():
