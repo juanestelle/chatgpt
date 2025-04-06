@@ -67,4 +67,39 @@ def webhook():
         }
 
         try:
-            resposta_gpt_
+            resposta_gpt = openai.ChatCompletion.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {"role": "system", "content": instruccio[idioma]},
+                    {"role": "user", "content": message}
+                ]
+            )
+            resposta = resposta_gpt.choices[0].message.content
+        except Exception as e:
+            print("❌ Error amb OpenAI:", e)
+            resposta = "Ho sento, ara mateix no puc respondre. Torna-ho a intentar més tard."
+
+    whatsapp_url = f"https://graph.facebook.com/v19.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
+    headers = {
+        "Authorization": f"Bearer {WHATSAPP_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": from_number,
+        "type": "text",
+        "text": {"body": resposta}
+    }
+
+    r = requests.post(whatsapp_url, json=payload, headers=headers)
+    print("📤 Enviat a WhatsApp:", r.status_code, r.text)
+
+    return jsonify(success=True)
+
+@app.route('/webhook', methods=['GET'])
+def verify_webhook():
+    verify_token = "parquet2025"
+    if request.args.get("hub.verify_token") == verify_token:
+        return request.args.get("hub.challenge")
+    return "Error de verificació", 403
