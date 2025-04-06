@@ -1,31 +1,32 @@
-from flask import Flask, request, jsonify
+import json
 import os
+import openai
+from flask import Flask, request, jsonify
 import requests
-from openai import OpenAI
 
 app = Flask(__name__)
 
-WHATSAPP_TOKEN = "EAAN6GZC00bRIBO4lPqMA60OLBET3KXbGOpoxKmjQKb0pMEhHH9mU69oPb5FHyY194Hp0uWlR8FfBya3ZByvrxw4celcsD5uREEX4vObRvXy2Vkgp4EP8knIA64Bxd7xuRvDpRUVksAc7ZAaCncYN9RBtQoZCxzZCHxgtChNYAmZBeNPfK8ZCK3z8TU3HPdS47hwoT5eux4UEXWxTkZB6FFjAMLGUTGMZD"
+# 🔐 API Key d'OpenAI (agafa la variable d'entorn de Render)
+openai.api_key = os.environ.get("OPENAI_API_KEY")
+
+# ✅ Dades reals de WhatsApp Business (les que ja tens configurades)
+WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-@app.route('/', methods=['GET'])
-def home():
-    return "Webhook funcionant correctament!"
+# ✅ Carrega la base de coneixement extreta del teu e-commerce
+with open("coneixement_mundoparquet.json", "r") as f:
+    BASE = json.load(f)
 
-@app.route('/prova_openai')
-def prova_openai():
-    try:
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": "Ets un assistent de prova."},
-                {"role": "user", "content": "Hola, això és una prova."}
-            ]
-        )
-        return response.choices[0].message.content
-    except Exception as e:
-        return f"❌ Error: {e}"
+def buscar_text_relevant(pregunta):
+    """Mini simulador de cerca: selecciona el bloc de text més rellevant segons paraules claus."""
+    paraules = pregunta.lower().split()
+    resultats = []
+    for bloc in BASE:
+        coincidències = sum(p in bloc["text"].lower() for p in paraules)
+        if coincidències > 0:
+            resultats.append((coincidències, bloc["text"]))
+    resultats.sort(reverse=True)
+    return resultats[0][1] if resultats else ""
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -40,19 +41,22 @@ def webhook():
         print("⚠️ No hi ha missatge de text.")
         return jsonify(success=True)
 
+    # Cerca contingut rellevant del web
+    context = buscar_text_relevant(message)
+    print("🔍 Context seleccionat:", context)
+
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Ets un expert amable en parquets i terres laminats, i parles amb català del sud. Sempre ofereixes consells molt pràctics i detallats."},
+                {"role": "system", "content": f"Ets un expert de MundoParquet. Parles com un venedor català del sud i només respons basant-te en aquest context:\n\n{context}"},
                 {"role": "user", "content": message}
             ]
         )
         resposta_chatgpt = response.choices[0].message.content
-        print("✅ Resposta de ChatGPT:", resposta_chatgpt)
     except Exception as e:
-        print("❌ Error en la crida a OpenAI:", e)
-        resposta_chatgpt = "Ho sento, ara mateix no puc respondre. Torna-ho a intentar d'aquí uns instants."
+        print("❌ Error amb OpenAI:", e)
+        resposta_chatgpt = "Ho sento, ara mateix no puc respondre. Torna-ho a intentar més tard."
 
     whatsapp_url = f"https://graph.facebook.com/v19.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
@@ -68,7 +72,7 @@ def webhook():
     }
 
     r = requests.post(whatsapp_url, json=payload, headers=headers)
-    print("📤 Resposta de l'enviament a WhatsApp:", r.status_code, r.text)
+    print("📤 Enviat a WhatsApp:", r.status_code, r.text)
 
     return jsonify(success=True)
 
@@ -78,6 +82,3 @@ def verify_webhook():
     if request.args.get("hub.verify_token") == verify_token:
         return request.args.get("hub.challenge")
     return "Error de verificació", 403
-
-if __name__ == "__main__":
-    app.run(port=5000)
