@@ -6,14 +6,18 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
+# 🔐 Inicialitza el client d'OpenAI
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-WHATSAPP_TOKEN = "AQUÍ_EL_TEU_NOU_TOKEN"
+# 🔗 Configura les credencials de WhatsApp Business
+WHATSAPP_TOKEN = "EAAN6GZC00bRIBO7VZAxE8apUaZAdgdngOPrSRfVGIs5ireAFgItiQ6qZBz3Qj4HZCYzGBASrhAwjPBcMkUDHVzPpCztW9ZC9cpVwfIwe4SnSda0zWZBySOpVX3DcHKEbRu9xYZASVFZAxrrV8ZCvctWwf0ODgKj8Dkh5Qq7egEWBSs9aviWBFYh8Y7pgKr8hdqdixQ0K2rlXSkYp5rz1ZBrcupoHpMWtOEZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
 
-with open("coneixement_mundoparquet.json", "r") as f:
+# 📥 Carrega el coneixement del web MundoParquet
+with open("coneixement_mundoparquet.json", "r", encoding="utf-8") as f:
     BASE = json.load(f)
 
+# 🔍 Busca el bloc més rellevant del fitxer d'embeddings
 def buscar_text_relevant(pregunta):
     paraules = pregunta.lower().split()
     resultats = []
@@ -24,20 +28,22 @@ def buscar_text_relevant(pregunta):
     resultats.sort(reverse=True)
     return resultats[0][1] if resultats else ""
 
+# 🌐 Detecta l'idioma del text (català/castellà/desconegut)
 def detectar_idioma(text):
     try:
         resposta = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Digues si el següent text és en català, castellà o desconegut. Només respon amb una sola paraula: català, castellà o desconegut."},
+                {"role": "system", "content": "Digues si aquest text és en català, castellà o desconegut. Respon només una paraula: català, castellà o desconegut."},
                 {"role": "user", "content": text}
             ]
         )
         idioma = resposta.choices[0].message.content.strip().lower()
 
-        if any(p in text.lower() for p in ["castellà", "castellano", "en castellà", "en castellano"]):
+        # Truc de seguretat: interpretar respostes clares manualment
+        if any(p in text.lower() for p in ["castellano", "en castellano", "castellà"]):
             idioma = "castellà"
-        elif any(p in text.lower() for p in ["català", "catalan", "en català"]):
+        elif any(p in text.lower() for p in ["català", "en català", "catalan"]):
             idioma = "català"
 
         print(f"🧭 Idioma detectat: {idioma}")
@@ -46,6 +52,7 @@ def detectar_idioma(text):
         print("❌ Error detectant idioma:", e)
         return "desconegut"
 
+# 📬 Webhook per rebre missatges de WhatsApp
 @app.route('/webhook', methods=['POST'])
 def webhook():
     data = request.json
@@ -56,6 +63,7 @@ def webhook():
         from_number = data['entry'][0]['changes'][0]['value']['messages'][0]['from']
         print(f"💬 Missatge de {from_number}: {message}")
     except KeyError:
+        print("⚠️ Missatge sense contingut de text.")
         return jsonify(success=True)
 
     idioma = detectar_idioma(message)
@@ -64,12 +72,12 @@ def webhook():
         resposta = "Per poder ajudar-te millor, em pots dir si prefereixes continuar en català o castellà?"
     else:
         if idioma == "desconegut":
-            idioma = "castellà"  # 🟡 Per defecte: castellà
+            idioma = "castellà"  # idioma per defecte
 
         context = buscar_text_relevant(message)
         instruccio = {
-            "català": f"Ets un expert de MundoParquet. Respon de manera clara i amable en català (neutre). Usa només aquest context:\n\n{context}",
-            "castellà": f"Eres un experto de MundoParquet. Responde de forma clara y amable en castellano. Usa solo este contexto:\n\n{context}"
+            "català": f"Ets un expert de MundoParquet. Respon en català (neutre). Usa només aquest context:\n\n{context}",
+            "castellà": f"Eres un experto de MundoParquet. Responde en castellano. Usa solo este contexto:\n\n{context}"
         }
 
         try:
@@ -85,6 +93,7 @@ def webhook():
             print("❌ Error amb OpenAI:", e)
             resposta = "Ho sento, ara mateix no puc respondre. Torna-ho a intentar més tard."
 
+    # 📤 Envia la resposta a WhatsApp
     whatsapp_url = f"https://graph.facebook.com/v19.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
         "Authorization": f"Bearer {WHATSAPP_TOKEN}",
@@ -100,9 +109,12 @@ def webhook():
 
     r = requests.post(whatsapp_url, json=payload, headers=headers)
     print("📤 Enviat a WhatsApp:", r.status_code, r.text)
+    print("🔍 PAYLOAD:", json.dumps(payload, indent=2))
+    print("🔍 HEADERS:", headers)
 
     return jsonify(success=True)
 
+# ✅ Endpoint per a la verificació del webhook
 @app.route('/webhook', methods=['GET'])
 def verify_webhook():
     verify_token = "parquet2025"
