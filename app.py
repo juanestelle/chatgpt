@@ -1,16 +1,16 @@
 import json
 import os
-import openai
-from flask import Flask, request, jsonify
 import requests
+from flask import Flask, request, jsonify
+from openai import OpenAI
 
 app = Flask(__name__)
 
-# 🔐 Clau d'OpenAI (des de Render)
-openai.api_key = os.environ.get("OPENAI_API_KEY")
+# 🔐 Inicialitza el client OpenAI
+client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# ✅ Configuració WhatsApp
-WHATSAPP_TOKEN = "EAAN6GZC00bRIBO5coczj3YuP6e0YnbBeya0lFyZB3RXxajAHGMks5w45sLeCkTsW9fek0jmhMm4xeYTjKT4GM1lhxCzybnNz1zApapUfr2wLxlhpr1uKilPainn8dWp5IZBbqMamJlcJvJBWfeY74ZByG60aXmZC7xeXMOuOL6m3ea7ZAkBCZB3ZAIlSSQFqkFPwJ1yvz6cYcVYWUXd6LKcVoJkNEhYZD"
+# ✅ Dades de WhatsApp Business
+WHATSAPP_TOKEN = "EAAN6GZC00bRIBO7VZAxE8apUaZAdgdngOPrSRfVGIs5ireAFgItiQ6qZBz3Qj4HZCYzGBASrhAwjPBcMkUDHVzPpCztW9ZC9cpVwfIwe4SnSda0zWZBySOpVX3DcHKEbRu9xYZASVFZAxrrV8ZCvctWwf0ODgKj8Dkh5Qq7egEWBSs9aviWBFYh8Y7pgKr8hdqdixQ0K2rlXSkYp5rz1ZBrcupoHpMWtOEZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
 
 # ✅ Carrega la base de coneixement
@@ -29,14 +29,14 @@ def buscar_text_relevant(pregunta):
 
 def detectar_idioma(text):
     try:
-        resp = openai.ChatCompletion.create(
+        resposta_idioma = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "Digues si aquest text està escrit en català, castellà, o si no ho pots saber. Només digues un d'aquests: 'català', 'castellà', o 'desconegut'."},
                 {"role": "user", "content": text}
             ]
         )
-        idioma = resp.choices[0].message.content.strip().lower()
+        idioma = resposta_idioma.choices[0].message.content.strip().lower()
         print(f"🧭 Idioma detectat: {idioma}")
         return idioma
     except Exception as e:
@@ -67,7 +67,7 @@ def webhook():
         }
 
         try:
-            resposta_gpt = openai.ChatCompletion.create(
+            resposta_gpt = client.chat.completions.create(
                 model="gpt-3.5-turbo",
                 messages=[
                     {"role": "system", "content": instruccio[idioma]},
