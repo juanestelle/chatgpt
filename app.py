@@ -6,14 +6,11 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# 🔐 Inicialitza el client OpenAI
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# ✅ Dades de WhatsApp Business
-WHATSAPP_TOKEN = "EAAN6GZC00bRIBO7VZAxE8apUaZAdgdngOPrSRfVGIs5ireAFgItiQ6qZBz3Qj4HZCYzGBASrhAwjPBcMkUDHVzPpCztW9ZC9cpVwfIwe4SnSda0zWZBySOpVX3DcHKEbRu9xYZASVFZAxrrV8ZCvctWwf0ODgKj8Dkh5Qq7egEWBSs9aviWBFYh8Y7pgKr8hdqdixQ0K2rlXSkYp5rz1ZBrcupoHpMWtOEZD"
+WHATSAPP_TOKEN = "AQUÍ_EL_TEU_NOU_TOKEN"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
 
-# ✅ Carrega la base de coneixement
 with open("coneixement_mundoparquet.json", "r") as f:
     BASE = json.load(f)
 
@@ -29,14 +26,20 @@ def buscar_text_relevant(pregunta):
 
 def detectar_idioma(text):
     try:
-        resposta_idioma = client.chat.completions.create(
+        resposta = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "Digues si aquest text està escrit en català, castellà, o si no ho pots saber. Només digues un d'aquests: 'català', 'castellà', o 'desconegut'."},
+                {"role": "system", "content": "Digues si el següent text és en català, castellà o desconegut. Només respon amb una sola paraula: català, castellà o desconegut."},
                 {"role": "user", "content": text}
             ]
         )
-        idioma = resposta_idioma.choices[0].message.content.strip().lower()
+        idioma = resposta.choices[0].message.content.strip().lower()
+
+        if any(p in text.lower() for p in ["castellà", "castellano", "en castellà", "en castellano"]):
+            idioma = "castellà"
+        elif any(p in text.lower() for p in ["català", "catalan", "en català"]):
+            idioma = "català"
+
         print(f"🧭 Idioma detectat: {idioma}")
         return idioma
     except Exception as e:
@@ -57,9 +60,12 @@ def webhook():
 
     idioma = detectar_idioma(message)
 
-    if idioma not in ["català", "castellà"]:
+    if idioma == "desconegut" and len(message.split()) < 5:
         resposta = "Per poder ajudar-te millor, em pots dir si prefereixes continuar en català o castellà?"
     else:
+        if idioma == "desconegut":
+            idioma = "castellà"  # 🟡 Per defecte: castellà
+
         context = buscar_text_relevant(message)
         instruccio = {
             "català": f"Ets un expert de MundoParquet. Respon de manera clara i amable en català (neutre). Usa només aquest context:\n\n{context}",
