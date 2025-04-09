@@ -6,15 +6,14 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# Inicialització OpenAI
+# Configuració
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-# Configuració de WhatsApp
-WHATSAPP_TOKEN = "EAAN6GZC00bRIBOxW7wrQZABTEBI7qCv2P35q0rjjtBpOMuXH0bgcEbyi1su2EZBKyggicvYaAopDuuLBcaCvG64TwG0O57pkucHEtWhuzBXjxEj2UHkMAWmBzNdiVk5tkcJQd2gNuZBnaO2eB0CrY6MrSQ47UUqgBnFOaaRAeNV0QFZCpDhY2kQ6LoTtZCbLA6EZCeCrFlkTt7MghVnieAKRyvi1scZD"
+WHATSAPP_TOKEN = os.environ.get("EAAN6GZC00bRIBO9NhqhcRVy0cMnLwxZAMZAmJL5ZAbFkZCkH1NHWZC2ZALdanK5EnffY4BtgfYh8di9AkAqTQ73VNoXtcfTdrm1bQDPMfwPibkUEJZAxdkLbCmcU9QnnkL8iCsYM3958HvyyenGZBBLQUZBz0u9coZCETasbCMwLLHzcebaBa7lvUjqnZAFgFhBWNoPUxr54SZBZB15lc8ck684yLEOqP7ZAuBX")
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
+ASSISTANT_ID = "asst_5TFwLGxmWMBBqYD3tTbm0APi"
 
-# ID del GPT personalitzat de MundoParquet
-GPT_ID = "g-rSjrrRI65-mundoparquet"
+# Magatzem de fils
+threads = {}
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -28,25 +27,39 @@ def webhook():
         return jsonify(success=True)
 
     try:
-        resposta_gpt = client.chat.completions.create(
-            model="gpt-4",
-            messages=[
-                {"role": "user", "content": message}
-            ],
-            tools=[],
-            tool_choice="auto",
-            temperature=0.7,
-            max_tokens=800,
-            stream=False,
-            user=from_number,
-            extra_headers={"OpenAI-Beta": "assistants=v1"},
-            path=f"/v1/gpts/{GPT_ID}/completions"
+        # Reutilitzem fils per mantenir context
+        if from_number not in threads:
+            thread = client.beta.threads.create()
+            threads[from_number] = thread.id
+        else:
+            thread_id = threads[from_number]
+
+        client.beta.threads.messages.create(
+            thread_id=threads[from_number],
+            role="user",
+            content=message
         )
 
-        resposta = resposta_gpt.choices[0].message.content
+        run = client.beta.threads.runs.create(
+            thread_id=threads[from_number],
+            assistant_id=ASSISTANT_ID
+        )
+
+        # Esperar que acabi (polling bàsic)
+        while True:
+            run_status = client.beta.threads.runs.retrieve(
+                thread_id=threads[from_number],
+                run_id=run.id
+            )
+            if run_status.status == "completed":
+                break
+
+        messages = client.beta.threads.messages.list(thread_id=threads[from_number])
+        resposta = messages.data[0].content[0].text.value
+
     except Exception as e:
         print("❌ Error amb OpenAI:", e)
-        resposta = "Ho sento, ara mateix no puc respondre. Torna-ho a intentar més tard."
+        resposta = "Ho sento! Ara mateix no puc respondre. Torna-ho a provar en uns minuts."
 
     whatsapp_url = f"https://graph.facebook.com/v19.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
@@ -61,6 +74,8 @@ def webhook():
     }
 
     r = requests.post(whatsapp_url, json=payload, headers=headers)
+    print("\U0001F50D PAYLOAD:", json.dumps(payload, indent=2))
+    print("\U0001F50D HEADERS:", headers)
     print("\U0001F4E4 Enviat a WhatsApp:", r.status_code, r.text)
 
     return jsonify(success=True)
