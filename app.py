@@ -10,7 +10,7 @@ app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
 # Configuració de WhatsApp
-WHATSAPP_TOKEN = "POSA_AQUÍ_EL_TEU_TOKEN"
+WHATSAPP_TOKEN = "EAAN6GZC00bRIBOxW7wrQZABTEBI7qCv2P35q0rjjtBpOMuXH0bgcEbyi1su2EZBKyggicvYaAopDuuLBcaCvG64TwG0O57pkucHEtWhuzBXjxEj2UHkMAWmBzNdiVk5tkcJQd2gNuZBnaO2eB0CrY6MrSQ47UUqgBnFOaaRAeNV0QFZCpDhY2kQ6LoTtZCbLA6EZCeCrFlkTt7MghVnieAKRyvi1scZD"
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
 
 # ID del GPT personalitzat de MundoParquet
