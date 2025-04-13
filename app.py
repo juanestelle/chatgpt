@@ -10,10 +10,15 @@ app = Flask(__name__)
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
-ASSISTANT_ID = "asst_5TFwLGxmWMBBqYD3tTbm0APi"
 
-# Magatzem de fils
-threads = {}
+# System prompt editable — aquí defines el comportament del bot
+SYSTEM_PROMPT = (
+    "Ets un expert en terres laminats, parquets, vinílics, portes plegables, accessoris i instal·lació. "
+    "Parles com un assessor proper, atent i pràctic. "
+    "Dóna respostes clares, útils i amb llenguatge natural. "
+    "Comença en castellà si no pots detectar l'idioma. "
+    "Si no tens prou informació, recomana contactar amb l'equip humà."
+)
 
 @app.route("/webhook", methods=["POST"])
 def webhook():
@@ -27,35 +32,15 @@ def webhook():
         return jsonify(success=True)
 
     try:
-        # Reutilitzem fils per mantenir context
-        if from_number not in threads:
-            thread = client.beta.threads.create()
-            threads[from_number] = thread.id
-        else:
-            thread_id = threads[from_number]
-
-        client.beta.threads.messages.create(
-            thread_id=threads[from_number],
-            role="user",
-            content=message
+        # Crida directa a GPT amb system prompt editable
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": message}
+            ]
         )
-
-        run = client.beta.threads.runs.create(
-            thread_id=threads[from_number],
-            assistant_id=ASSISTANT_ID
-        )
-
-        # Esperar que acabi (polling bàsic)
-        while True:
-            run_status = client.beta.threads.runs.retrieve(
-                thread_id=threads[from_number],
-                run_id=run.id
-            )
-            if run_status.status == "completed":
-                break
-
-        messages = client.beta.threads.messages.list(thread_id=threads[from_number])
-        resposta = messages.data[0].content[0].text.value
+        resposta = response.choices[0].message.content
 
     except Exception as e:
         print("❌ Error amb OpenAI:", e)
