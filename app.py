@@ -3,7 +3,6 @@ import json
 import requests
 from flask import Flask, request, jsonify
 from openai import OpenAI
-from langdetect import detect
 
 app = Flask(__name__)
 
@@ -42,20 +41,8 @@ def webhook():
     except KeyError:
         return jsonify(success=True)
 
-    # Detectar idioma del missatge
-    try:
-        idioma = detect(message)
-    except:
-        idioma = "unknown"
-
-    if idioma == "ca":
-        idioma_prompt = "Respon en català neutre."
-    elif idioma == "es":
-        idioma_prompt = "Responde en castellano."
-    else:
-        idioma_prompt = "L'idioma no s'ha pogut detectar. Pregunta educadament si vol continuar en català o castellà."
-
-    # Construir prompt final amb idioma inclòs
+    # Fixar idioma per defecte (castellà)
+    idioma_prompt = "Responde en castellano."
     full_prompt = f"{SYSTEM_PROMPT}\n\n{idioma_prompt}"
 
     # Gestionar context per número (opcional)
