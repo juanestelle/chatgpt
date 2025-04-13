@@ -3,6 +3,7 @@ import json
 import requests
 from flask import Flask, request, jsonify
 from openai import OpenAI
+from langdetect import detect
 
 app = Flask(__name__)
 
@@ -11,8 +12,8 @@ client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 WHATSAPP_TOKEN = os.environ.get("WHATSAPP_TOKEN")
 WHATSAPP_PHONE_NUMBER_ID = "612217341968390"
 
-# System prompt editable — aquí defines el comportament del bot
-SYSTEM_PROMPT = (
+# System prompt per defecte
+DEFAULT_SYSTEM_PROMPT = (
     "Ets un expert en terres laminats, parquets, vinílics, portes plegables, accessoris i instal·lació. "
     "Parles com un assessor proper, atent i pràctic. "
     "Dóna respostes clares, útils i amb llenguatge natural. "
@@ -20,10 +21,20 @@ SYSTEM_PROMPT = (
     "Si no tens prou informació, recomana contactar amb l'equip humà."
 )
 
+# Llegir system prompt des d'un fitxer si existeix
+if os.path.exists("system_prompt.txt"):
+    with open("system_prompt.txt", "r") as f:
+        SYSTEM_PROMPT = f.read().strip()
+else:
+    SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+
+# Manteniment de sessions (historial opcional per millorar el context)
+conversations = {}
+
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.json
-    print("\U0001F514 Missatge rebut:", json.dumps(data, indent=2))
+    print("🔔 Missatge rebut:", json.dumps(data, indent=2))
 
     try:
         message = data['entry'][0]['changes'][0]['value']['messages'][0]['text']['body']
@@ -31,16 +42,34 @@ def webhook():
     except KeyError:
         return jsonify(success=True)
 
+    # Detectar idioma del missatge
     try:
-        # Crida directa a GPT amb system prompt editable
+        idioma = detect(message)
+    except:
+        idioma = "unknown"
+
+    if idioma == "ca":
+        idioma_prompt = "Respon en català neutre."
+    elif idioma == "es":
+        idioma_prompt = "Responde en castellano."
+    else:
+        idioma_prompt = "L'idioma no s'ha pogut detectar. Pregunta educadament si vol continuar en català o castellà."
+
+    # Construir prompt final amb idioma inclòs
+    full_prompt = f"{SYSTEM_PROMPT}\n\n{idioma_prompt}"
+
+    # Gestionar context per número (opcional)
+    history = conversations.get(from_number, [])
+    history.append({"role": "user", "content": message})
+
+    try:
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": message}
-            ]
+            model="gpt-4o",
+            messages=[{"role": "system", "content": full_prompt}] + history
         )
         resposta = response.choices[0].message.content
+        history.append({"role": "assistant", "content": resposta})
+        conversations[from_number] = history[-10:]  # Limitar context a últims 10 missatges
 
     except Exception as e:
         print("❌ Error amb OpenAI:", e)
@@ -59,9 +88,9 @@ def webhook():
     }
 
     r = requests.post(whatsapp_url, json=payload, headers=headers)
-    print("\U0001F50D PAYLOAD:", json.dumps(payload, indent=2))
-    print("\U0001F50D HEADERS:", headers)
-    print("\U0001F4E4 Enviat a WhatsApp:", r.status_code, r.text)
+    print("🔍 PAYLOAD:", json.dumps(payload, indent=2))
+    print("🔍 HEADERS:", headers)
+    print("📤 Enviat a WhatsApp:", r.status_code, r.text)
 
     return jsonify(success=True)
 
