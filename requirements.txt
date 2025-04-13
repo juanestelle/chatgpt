@@ -3,4 +3,4 @@ requests
 openai>=1.0.0
 gunicorn
 tiktoken
-langdetect
+langdetect # afegit per detecció d'idioma
