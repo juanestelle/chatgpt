@@ -17,7 +17,8 @@ DEFAULT_SYSTEM_PROMPT = (
     "Parles com un assessor proper, atent i pràctic. "
     "Dóna respostes clares, útils i amb llenguatge natural. "
     "Comença en castellà si no pots detectar l'idioma. "
-    "Si no tens prou informació, recomana contactar amb l'equip humà."
+    "Si no tens prou informació, recomana contactar amb l'equip humà. "
+    "Evita repetir sempre la mateixa frase de tancament i no facis servir signes d'admiració."
 )
 
 # Llegir system prompt des d'un fitxer si existeix
@@ -26,6 +27,17 @@ if os.path.exists("system_prompt.txt"):
         SYSTEM_PROMPT = f.read().strip()
 else:
     SYSTEM_PROMPT = DEFAULT_SYSTEM_PROMPT
+
+# Funció per carregar coneixement extra (documents .txt)
+def carregar_documents():
+    context = ""
+    directori = "./data"
+    if os.path.exists(directori):
+        for fitxer in os.listdir(directori):
+            if fitxer.endswith(".txt"):
+                with open(os.path.join(directori, fitxer), "r", encoding="utf-8") as f:
+                    context += f"\n\n# {fitxer}\n" + f.read()
+    return context.strip()
 
 # Manteniment de sessions (historial opcional per millorar el context)
 conversations = {}
@@ -41,9 +53,9 @@ def webhook():
     except KeyError:
         return jsonify(success=True)
 
-    # Fixar idioma per defecte (castellà)
-    idioma_prompt = "Responde en castellano."
-    full_prompt = f"{SYSTEM_PROMPT}\n\n{idioma_prompt}"
+    # Afegim el coneixement entrenat
+    documents_entrenats = carregar_documents()
+    full_prompt = f"{SYSTEM_PROMPT}\n\n{documents_entrenats}\n\nResponde en castellano."
 
     # Gestionar context per número (opcional)
     history = conversations.get(from_number, [])
@@ -60,7 +72,7 @@ def webhook():
 
     except Exception as e:
         print("❌ Error amb OpenAI:", e)
-        resposta = "Ho sento! Ara mateix no puc respondre. Torna-ho a provar en uns minuts."
+        resposta = "Ho sento. Ara mateix no puc respondre. Torna-ho a provar en uns minuts."
 
     whatsapp_url = f"https://graph.facebook.com/v19.0/{WHATSAPP_PHONE_NUMBER_ID}/messages"
     headers = {
