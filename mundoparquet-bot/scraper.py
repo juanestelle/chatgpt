@@ -14,25 +14,21 @@ def fetch_xml(url):
 def get_sub_sitemaps(xml_content):
     root = ET.fromstring(xml_content)
     ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-    return [loc.text for loc in root.findall('ns:url/ns:loc', ns) if 'sitemap' in loc.text]
+    return [sitemap.find('ns:loc', ns).text for sitemap in root.findall('ns:sitemap', ns)]
 
 def extract_product_urls_from_sitemap(xml_content):
     root = ET.fromstring(xml_content)
     ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-    return [
-        url.find('ns:loc', ns).text
-        for url in root.findall('ns:url', ns)
-        if "/catalog/product/view" in url.find('ns:loc', ns).text
-    ]
+    return [url.find('ns:loc', ns).text for url in root.findall('ns:url', ns)]
 
 def scrape_title(url):
     try:
         response = requests.get(url, timeout=10)
         soup = BeautifulSoup(response.text, 'html.parser')
-        title = soup.find("title")
-        return title.text.strip() if title else None
+        title_tag = soup.find("title")
+        return title_tag.text.strip() if title_tag else None
     except Exception as e:
-        print(f"❌ Error amb {url}: {e}")
+        print(f"⚠️ Error scraping {url}: {e}")
         return None
 
 def main():
@@ -49,6 +45,7 @@ def main():
         print(f"📄 Analitzant: {sitemap_url}")
         sitemap_xml = fetch_xml(sitemap_url)
         urls = extract_product_urls_from_sitemap(sitemap_xml)
+        print(f"🔗 S'han trobat {len(urls)} URLs en aquest sitemap.")
         all_urls.extend(urls)
 
     print(f"🔎 S'han trobat {len(all_urls)} productes")
