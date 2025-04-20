@@ -26,6 +26,7 @@ def main():
     with open(OUTPUT_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
-    print(f"✅ S'han guardat {len(data)} productes a {OUTPUT_FILE}")
-    if __name__ == "__main__":
+        print(f"✅ S'han guardat {len(data)} productes a {OUTPUT_FILE}")
+
+if __name__ == "__main__":
     main()
