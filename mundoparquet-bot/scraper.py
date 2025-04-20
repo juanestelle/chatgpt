@@ -24,7 +24,7 @@ def scrape_title(url):
         title = soup.find("title").text.strip()
         return title
     except Exception as e:
-        print(f"Error scraping {url}: {e}")
+        print(f"❌ Error scraping {url}: {e}")
         return None
 
 def main():
@@ -42,8 +42,8 @@ def main():
         json.dump(data, f, ensure_ascii=False, indent=2)
     
     print(f"✅ S'han guardat {len(data)} productes a {OUTPUT_FILE}")
+    print("✅ Productes extrets:")
+    print(json.dumps(data, indent=2, ensure_ascii=False))
 
 if __name__ == "__main__":
     main()
-print("✅ Productes extrets:")
-print(json.dumps(products, indent=2, ensure_ascii=False))
