@@ -3,20 +3,15 @@ import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
 import json
 
-MAIN_SITEMAP_URL = "https://www.mundoparquet.com/sitemap.xml"
+SITEMAP_URL = "https://www.mundoparquet.com/sitemap.xml"
 OUTPUT_FILE = "products_data.json"
 
-def fetch_xml(url):
+def fetch_sitemap(url):
     response = requests.get(url)
     response.raise_for_status()
     return response.text
 
-def get_sub_sitemaps(xml_content):
-    root = ET.fromstring(xml_content)
-    ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
-    return [sitemap.find('ns:loc', ns).text for sitemap in root.findall('ns:sitemap', ns)]
-
-def extract_product_urls_from_sitemap(xml_content):
+def extract_all_urls(xml_content):
     root = ET.fromstring(xml_content)
     ns = {'ns': 'http://www.sitemaps.org/schemas/sitemap/0.9'}
     return [url.find('ns:loc', ns).text for url in root.findall('ns:url', ns)]
@@ -32,26 +27,21 @@ def scrape_title(url):
         return None
 
 def main():
-    print(f"🔗 Llegint sitemap: {MAIN_SITEMAP_URL}")
-    main_xml = fetch_xml(MAIN_SITEMAP_URL)
-    product_sitemaps = get_sub_sitemaps(main_xml)
+    print(f"🔗 Llegint sitemap: {SITEMAP_URL}")
+    xml = fetch_sitemap(SITEMAP_URL)
+    urls = extract_all_urls(xml)
+    
+    print(f"🔎 S'han trobat {len(urls)} URLs al sitemap")
+    print("📋 Primeres 10 URLs:")
+    for u in urls[:10]:
+        print("➡️", u)
 
-    print(f"🧭 Sitemaps trobats:")
-    for sm in product_sitemaps:
-        print("➡️", sm)
-
-    all_urls = []
-    for sitemap_url in product_sitemaps:
-        print(f"📄 Analitzant: {sitemap_url}")
-        sitemap_xml = fetch_xml(sitemap_url)
-        urls = extract_product_urls_from_sitemap(sitemap_xml)
-        print(f"🔗 S'han trobat {len(urls)} URLs en aquest sitemap.")
-        all_urls.extend(urls)
-
-    print(f"🔎 S'han trobat {len(all_urls)} productes")
+    # Aquí pots filtrar les que siguin de productes (ajustem després si vols)
+    product_urls = [u for u in urls if "/product/" in u or "/catalog/product/view" in u]
+    print(f"🧪 URLs de producte filtrades: {len(product_urls)}")
 
     data = []
-    for url in all_urls:
+    for url in product_urls:
         title = scrape_title(url)
         if title:
             slug = url.strip('/').split('/')[-1]
