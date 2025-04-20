@@ -29,4 +29,3 @@ def main():
     print(f"✅ S'han guardat {len(data)} productes a {OUTPUT_FILE}")
     if __name__ == "__main__":
     main()
-
