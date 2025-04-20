@@ -45,3 +45,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+print("✅ Productes extrets:")
+print(json.dumps(products, indent=2, ensure_ascii=False))
