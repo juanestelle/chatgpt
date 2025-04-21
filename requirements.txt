@@ -5,3 +5,5 @@ gunicorn
 tiktoken
 langdetect # afegit per detecció d'idioma
 beautifulsoup4
+lxml
+selenium
