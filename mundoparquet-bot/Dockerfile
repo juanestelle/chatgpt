@@ -49,7 +49,7 @@ COPY mundoparquet-bot/scraper.py .
 RUN ls -la /app
 
 # Instal·la les dependències de Python
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
 # Comanda per defecte
 CMD ["python", "scraper.py"]
