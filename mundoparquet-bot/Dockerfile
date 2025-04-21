@@ -51,5 +51,8 @@ RUN ls -la /app
 # Instal·la les dependències de Python
 RUN pip install --no-cache-dir --break-system-packages -r requirements.txt
 
+# Executa scraper.py durant la construcció per veure errors
+RUN python scraper.py || true
+
 # Comanda per defecte
 CMD ["python", "scraper.py"]
