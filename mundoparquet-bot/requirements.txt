@@ -1,2 +1,9 @@
+flask
 requests
+openai>=1.0.0
+gunicorn
+tiktoken
+langdetect # afegit per detecció d'idioma
 beautifulsoup4
+lxml
+selenium
