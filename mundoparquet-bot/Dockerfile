@@ -1,17 +1,25 @@
-FROM python:3.9-slim
+FROM debian:12-slim
 
 RUN apt-get update && apt-get install -y \
-    wget \
-    unzip \
+    python3 \
+    python3-pip \
     curl \
-    gnupg \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add - \
-    && echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list \
-    && apt-get update \
-    && apt-get install -y google-chrome-stable \
-    && rm -rf /var/lib/apt/lists/*
+    unzip \
+    libnss3 \
+    libatk1.0-0 \
+    libatk-bridge2.0-0 \
+    libcups2 \
+    libdrm2 \
+    libxkbcommon0 \
+    libxcomposite1 \
+    libxdamage1 \
+    libxfixes3 \
+    libxrandr2 \
+    libgbm1 \
+    libasound2 \
+    libpango-1.0-0 \
+    libcairo2 \
+    google-chrome-stable
 
 RUN CHROMEDRIVER_VERSION=$(curl -sS chromedriver.storage.googleapis.com/LATEST_RELEASE) \
     && wget -q https://chromedriver.storage.googleapis.com/$CHROMEDRIVER_VERSION/chromedriver_linux64.zip \
@@ -23,6 +31,8 @@ WORKDIR /app
 
 COPY mundoparquet-bot/requirements.txt .
 COPY mundoparquet-bot/scraper.py .
+
+RUN ls -la /app
 
 RUN pip install --no-cache-dir -r requirements.txt
 
