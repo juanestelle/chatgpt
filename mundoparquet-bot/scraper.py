@@ -26,6 +26,23 @@ def scrape_title(url):
         print(f"⚠️ Error scraping {url}: {e}")
         return None
 
+def is_product_url(url):
+    # Patró 1: URLs amb /catalog/product/view
+    if "/catalog/product/view" in url:
+        return True
+    # Patró 2 i 3: URLs amb molts segments i noms específics
+    segments = url.strip('/').split('/')
+    # Comprovem si té més de 4 segments i no és una categoria coneguda
+    if len(segments) > 4 and not any(
+        keyword in url for keyword in [
+            '/marcas-', '/gamas/', '/resistente-al-agua/',
+            '/suelos-laminados$', '/vinilo$', '/tarimas-flotantes$',
+            '/puertas$', '/rodapie$'
+        ]
+    ):
+        return True
+    return False
+
 def main():
     print(f"🔗 Llegint sitemap: {SITEMAP_URL}")
     xml = fetch_sitemap(SITEMAP_URL)
@@ -36,9 +53,12 @@ def main():
     for u in urls[:10]:
         print("➡️", u)
 
-    # Aquí pots filtrar les que siguin de productes (ajustem després si vols)
-    product_urls = [u for u in urls if "/product/" in u or "/catalog/product/view" in u]
+    # Filtra URLs de productes
+    product_urls = [u for u in urls if is_product_url(u)]
     print(f"🧪 URLs de producte filtrades: {len(product_urls)}")
+    print("📋 Primeres 10 URLs de productes (si n'hi ha):")
+    for u in product_urls[:10]:
+        print("➡️", u)
 
     data = []
     for url in product_urls:
